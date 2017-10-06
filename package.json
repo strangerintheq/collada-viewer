@@ -1,0 +1,12 @@
+{
+  "name": "collada viewer",
+  "version": "0.0.1",
+  "description": "collada viewer",
+  "author": "stranger in the q",
+  "dependencies": {
+    "three": "^0.87.1"
+  },
+  "devDependencies": {
+    "gulp-task-builder": "git+https://github.com/strangerintheq/gulp-task-builder.git#1.0.7"
+  }
+}
