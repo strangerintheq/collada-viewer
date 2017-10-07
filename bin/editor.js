@@ -44,12 +44,7 @@
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	__webpack_require__(1);
-	THREE = __webpack_require__(2);
-	__webpack_require__(3);
-	__webpack_require__(4);
-	__webpack_require__(5);
-	__webpack_require__(6);
+	__webpack_require__(1)
 
 	var renderer = createRenderer();
 	var scene = new THREE.Scene();
@@ -76,13 +71,31 @@
 
 	window.scale = function (scale) {
 	    if (!window.collada) return;
-	    window.collada.scale.x = window.collada.scale.y
-	        = window.collada.scale.z = scale;
+	    window.collada.scale.x =
+	        window.collada.scale.y =
+	            window.collada.scale.z = scale;
+	    setTimeout(render, 100);
+	};
+
+	window.translate = function (x, y, z) {
+	    if (!window.collada) return;
+	    window.collada.position.x = x;
+	    window.collada.position.y = y;
+	    window.collada.position.z = z;
+	    setTimeout(render, 100);
+	};
+
+	window.rotate = function (x,y,z) {
+	    if (!window.collada) return;
+	    window.collada.rotation.x = x/180*Math.PI;
+	    window.collada.rotation.y = y/180*Math.PI;
+	    window.collada.rotation.z = z/180*Math.PI;
 	    setTimeout(render, 100);
 	};
 
 	window.state = function () {
 	    var c = window.collada;
+	    if (!c) return;
 	    return {
 	        scale: c.scale.x,
 	        position: {
@@ -99,6 +112,18 @@
 	};
 
 	window.grid = grid;
+
+	window.addEventListener('mouseup', function (e) {
+	    if (e.button < 2) return;
+	    if (transformControls.getMode() === "scale") {
+	        transformControls.setMode("rotate")
+	    } else if (transformControls.getMode() === "rotate") {
+	        transformControls.setMode("translate")
+	    } else {
+	        transformControls.setMode("scale")
+	    }
+	    render();
+	});
 
 	function createCamera() {
 	    var camera = new THREE.PerspectiveCamera(60, 1, 1, 1e10);
@@ -170,14 +195,13 @@
 	    transformControls.addEventListener('mouseUp', function () {
 	        editorControls.enabled = true;
 	    });
-	    transformControls.setMode('rotate');
 	    scene.add(transformControls);
 	    return transformControls;
 	}
 
 	function createText(text, x, y, z) {
 	    var canvas = document.createElement('canvas');
-	    canvas.width = canvas.height = 128;
+	    canvas.width = canvas.height = 256;
 	    var ctx = canvas.getContext('2d');
 	    ctx.font = "22px Arial";
 	    ctx.fillStyle = "white";
@@ -191,7 +215,7 @@
 	    }));
 	    sprite.position.set(x, y, z);
 	    sprite.updateScale = function () {
-	        var scale = sprite.position.distanceTo(camera.position) / 10;
+	        var scale = sprite.position.distanceTo(camera.position) / 4;
 	        sprite.scale.set(scale, scale, scale);
 	    };
 	    window.gridHelper.add(sprite);
@@ -207,9 +231,9 @@
 	    gridLabel(-size/2, size/2);
 	    gridLabel(size/2, -size/2);
 	    gridLabel(size/2, size/2);
-
+	    render();
 	    function gridLabel(x, z) {
-	        createText('x: ' + x + ' y: ' + z, x, 0, z);
+	        createText('x: ' + x + ' z: ' + z, x, 0, z);
 	    }
 	}
 
@@ -230,6 +254,17 @@
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	__webpack_require__(2);
+	THREE = __webpack_require__(3);
+	__webpack_require__(4);
+	__webpack_require__(5);
+	__webpack_require__(6);
+	__webpack_require__(7);
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/****************************************************************************
@@ -650,7 +685,7 @@
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	(function (global, factory) {
@@ -44895,7 +44930,7 @@
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports) {
 
 	/**
@@ -45192,7 +45227,7 @@
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 	/**
@@ -46165,7 +46200,7 @@
 
 						if ( scope.axis === "XYZ" ) {
 
-							scale = 1 + ( ( point.y ) / Math.max( oldScale.x, oldScale.y, oldScale.z ) );
+							scale = 0.001 + ( ( point.y ) / Math.max( oldScale.x, oldScale.y, oldScale.z ) );
 
 							scope.object.scale.x = oldScale.x * scale;
 							scope.object.scale.y = oldScale.y * scale;
@@ -46347,7 +46382,7 @@
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports) {
 
 	/**
@@ -46579,7 +46614,7 @@
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 	/**

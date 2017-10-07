@@ -1,9 +1,4 @@
-require('./QWebChannel');
-THREE = require('../node_modules/three/build/three');
-require('../node_modules/three/examples/js/controls/EditorControls');
-require('../node_modules/three/examples/js/controls/TransformControls');
-require('../node_modules/three/examples/js/SkyShader');
-require('../node_modules/three/examples/js/loaders/ColladaLoader');
+require('./dependencies')
 
 var renderer = createRenderer();
 var scene = new THREE.Scene();
@@ -30,13 +25,31 @@ window.load = function (path) {
 
 window.scale = function (scale) {
     if (!window.collada) return;
-    window.collada.scale.x = window.collada.scale.y
-        = window.collada.scale.z = scale;
+    window.collada.scale.x =
+        window.collada.scale.y =
+            window.collada.scale.z = scale;
+    setTimeout(render, 100);
+};
+
+window.translate = function (x, y, z) {
+    if (!window.collada) return;
+    window.collada.position.x = x;
+    window.collada.position.y = y;
+    window.collada.position.z = z;
+    setTimeout(render, 100);
+};
+
+window.rotate = function (x,y,z) {
+    if (!window.collada) return;
+    window.collada.rotation.x = x/180*Math.PI;
+    window.collada.rotation.y = y/180*Math.PI;
+    window.collada.rotation.z = z/180*Math.PI;
     setTimeout(render, 100);
 };
 
 window.state = function () {
     var c = window.collada;
+    if (!c) return;
     return {
         scale: c.scale.x,
         position: {
@@ -53,6 +66,18 @@ window.state = function () {
 };
 
 window.grid = grid;
+
+window.addEventListener('mouseup', function (e) {
+    if (e.button < 2) return;
+    if (transformControls.getMode() === "scale") {
+        transformControls.setMode("rotate")
+    } else if (transformControls.getMode() === "rotate") {
+        transformControls.setMode("translate")
+    } else {
+        transformControls.setMode("scale")
+    }
+    render();
+});
 
 function createCamera() {
     var camera = new THREE.PerspectiveCamera(60, 1, 1, 1e10);
@@ -124,14 +149,13 @@ function createTransformControls() {
     transformControls.addEventListener('mouseUp', function () {
         editorControls.enabled = true;
     });
-    transformControls.setMode('rotate');
     scene.add(transformControls);
     return transformControls;
 }
 
 function createText(text, x, y, z) {
     var canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 128;
+    canvas.width = canvas.height = 256;
     var ctx = canvas.getContext('2d');
     ctx.font = "22px Arial";
     ctx.fillStyle = "white";
@@ -145,7 +169,7 @@ function createText(text, x, y, z) {
     }));
     sprite.position.set(x, y, z);
     sprite.updateScale = function () {
-        var scale = sprite.position.distanceTo(camera.position) / 10;
+        var scale = sprite.position.distanceTo(camera.position) / 4;
         sprite.scale.set(scale, scale, scale);
     };
     window.gridHelper.add(sprite);
@@ -161,9 +185,9 @@ function grid(size) {
     gridLabel(-size/2, size/2);
     gridLabel(size/2, -size/2);
     gridLabel(size/2, size/2);
-
+    render();
     function gridLabel(x, z) {
-        createText('x: ' + x + ' y: ' + z, x, 0, z);
+        createText('x: ' + x + ' z: ' + z, x, 0, z);
     }
 }
 
