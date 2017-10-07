@@ -1,59 +1,83 @@
-var camera, scene, renderer;
-var editorControls, transformControls, grid;
+require('./QWebChannel');
+THREE = require('../node_modules/three/build/three');
+require('../node_modules/three/examples/js/controls/EditorControls');
+require('../node_modules/three/examples/js/controls/TransformControls');
+require('../node_modules/three/examples/js/SkyShader');
+require('../node_modules/three/examples/js/loaders/ColladaLoader');
 
-init();
-render();
+var renderer = createRenderer();
+var scene = new THREE.Scene();
+var camera = createCamera();
+var editorControls = createEditorControls();
+var transformControls = createTransformControls();
 
-window.loadModel = function (spacecraft) {
+createSky();
+grid(100);
+onWindowResize();
+
+window.load = function (path) {
+    window.collada && scene.remove(window.collada);
     var loader = new THREE.ColladaLoader();
     loader.options.convertUpAxis = true;
-    loader.load(spacecraft.model, function (collada) {
-        var dae = collada.scene;
-        dae.scale.x = dae.scale.y = dae.scale.z = 1;
-        dae.updateMatrix();
-        scene.add(dae);
-        transformControls.attach(dae);
-        render();
+    loader.load(path, function (loaded) {
+        window.collada = loaded.scene;
+        window.collada.updateMatrix();
+        scene.add(window.collada);
+        transformControls.attach(window.collada);
+        scale(1);
     } );
 };
 
-function init() {
+window.scale = function (scale) {
+    if (!window.collada) return;
+    window.collada.scale.x = window.collada.scale.y
+        = window.collada.scale.z = scale;
+    setTimeout(render, 100);
+};
+
+window.state = function () {
+    var c = window.collada;
+    return {
+        scale: c.scale.x,
+        position: {
+            x: c.position.x,
+            y: c.position.y,
+            z: c.position.z
+        },
+        rotation: {
+            x: c.rotation.x,
+            y: c.rotation.y,
+            z: c.rotation.z
+        }
+    };
+};
+
+window.grid = grid;
+
+function createCamera() {
+    var camera = new THREE.PerspectiveCamera(60, 1, 1, 1e10);
+    camera.position.set(100, 100, 100);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+    return camera;
+}
+
+function createRenderer() {
+    var renderer = new THREE.WebGLRenderer({antialias: true});
     window.addEventListener('resize', onWindowResize, false);
-    initRenderer();
-    initScene();
-    initEditorControls();
-    initTransformControls();
-    initSky();
-}
-
-function initScene() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000000);
-    camera.position.set(0, 10, 50);
-
-    grid = new THREE.GridHelper(10, 10, 0xffffff, 0xffffff);
-    scene.add(grid);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-}
-
-function initRenderer() {
-    renderer = new THREE.WebGLRenderer({
-        antialias: true
-    });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+    return renderer;
 }
 
-function initSky() {
+function createSky() {
 
     var sky = new THREE.Sky();
     scene.add(sky.mesh);
 
     var sun = {
         inclination: 0.49,
-        azimuth: 0.25
+        azimuth: 0.25,
+        color: 0xffffff
     };
 
     var uniforms = sky.uniforms;
@@ -73,25 +97,26 @@ function initSky() {
     position.z = distance * Math.sin(phi) * Math.cos(theta);
 
     sky.uniforms.sunPosition.value.copy(position);
-    var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+
+    var directionalLight = new THREE.DirectionalLight(sun.color, 0.7);
     directionalLight.position.copy(position);
     scene.add(directionalLight);
+
+    scene.add(new THREE.AmbientLight(sun.color, 0.3));
 }
 
-function initEditorControls() {
-    editorControls = new THREE.EditorControls(camera, renderer.domElement);
+function createEditorControls() {
+    var editorControls = new THREE.EditorControls(camera, renderer.domElement);
     editorControls.addEventListener('change', function () {
         transformControls.update();
         render();
     });
-    editorControls.maxPolarAngle = Math.PI / 2;
-    editorControls.enableZoom = true;
-    editorControls.enablePan = true;
+    editorControls.panSpeed = 0;
     return editorControls;
 }
 
-function initTransformControls() {
-    transformControls = new THREE.TransformControls(camera, renderer.domElement);
+function createTransformControls() {
+    var transformControls = new THREE.TransformControls(camera, renderer.domElement);
     transformControls.addEventListener('change', render);
     transformControls.addEventListener('mouseDown', function () {
         editorControls.enabled = false;
@@ -99,7 +124,47 @@ function initTransformControls() {
     transformControls.addEventListener('mouseUp', function () {
         editorControls.enabled = true;
     });
+    transformControls.setMode('rotate');
     scene.add(transformControls);
+    return transformControls;
+}
+
+function createText(text, x, y, z) {
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    var ctx = canvas.getContext('2d');
+    ctx.font = "22px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+    var texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    var sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texture
+    }));
+    sprite.position.set(x, y, z);
+    sprite.updateScale = function () {
+        var scale = sprite.position.distanceTo(camera.position) / 10;
+        sprite.scale.set(scale, scale, scale);
+    };
+    window.gridHelper.add(sprite);
+    window.gridHelper.sprites.push(sprite);
+}
+
+function grid(size) {
+    window.gridHelper && scene.remove(gridHelper);
+    window.gridHelper = new THREE.GridHelper(size, 10, 0xffffff, 0xffffff);
+    window.gridHelper.sprites = [];
+    scene.add(window.gridHelper);
+    gridLabel(-size/2, -size/2);
+    gridLabel(-size/2, size/2);
+    gridLabel(size/2, -size/2);
+    gridLabel(size/2, size/2);
+
+    function gridLabel(x, z) {
+        createText('x: ' + x + ' y: ' + z, x, 0, z);
+    }
 }
 
 function onWindowResize() {
@@ -110,5 +175,8 @@ function onWindowResize() {
 }
 
 function render() {
+    window.gridHelper && window.gridHelper.sprites.forEach(function (sprite) {
+        sprite.updateScale();
+    });
     renderer.render(scene, camera);
 }
