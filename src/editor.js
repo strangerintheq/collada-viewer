@@ -6,6 +6,12 @@ var camera = createCamera();
 var editorControls = createEditorControls();
 var transformControls = createTransformControls();
 
+window.listeners = {
+    rotation: null,
+    scale: null,
+    position: null
+};
+
 createSky();
 grid(100);
 onWindowResize();
@@ -20,7 +26,7 @@ window.load = function (path) {
         scene.add(window.collada);
         transformControls.attach(window.collada);
         scale(1);
-    } );
+    });
 };
 
 window.scale = function (scale) {
@@ -45,24 +51,6 @@ window.rotate = function (x,y,z) {
     window.collada.rotation.y = y/180*Math.PI;
     window.collada.rotation.z = z/180*Math.PI;
     setTimeout(render, 100);
-};
-
-window.state = function () {
-    var c = window.collada;
-    if (!c) return;
-    return {
-        scale: c.scale.x,
-        position: {
-            x: c.position.x,
-            y: c.position.y,
-            z: c.position.z
-        },
-        rotation: {
-            x: c.rotation.x,
-            y: c.rotation.y,
-            z: c.rotation.z
-        }
-    };
 };
 
 window.grid = grid;
@@ -169,7 +157,7 @@ function createText(text, x, y, z) {
     }));
     sprite.position.set(x, y, z);
     sprite.updateScale = function () {
-        var scale = sprite.position.distanceTo(camera.position) / 4;
+        var scale = sprite.position.distanceTo(camera.position)/2;
         sprite.scale.set(scale, scale, scale);
     };
     window.gridHelper.add(sprite);
@@ -181,13 +169,15 @@ function grid(size) {
     window.gridHelper = new THREE.GridHelper(size, 10, 0xffffff, 0xffffff);
     window.gridHelper.sprites = [];
     scene.add(window.gridHelper);
-    gridLabel(-size/2, -size/2);
-    gridLabel(-size/2, size/2);
-    gridLabel(size/2, -size/2);
-    gridLabel(size/2, size/2);
+    gridLabel(0, -size/2);
+    gridLabel(0, size/2);
+    gridLabel(-size/2, 0);
+    gridLabel(size/2, 0);
     render();
+
     function gridLabel(x, z) {
-        createText('x: ' + x + ' z: ' + z, x, 0, z);
+        x && createText('x: ' + x, x*1.2, 0, z*1.2);
+        z && createText('z: ' + z, x*1.2, 0, z*1.2);
     }
 }
 
@@ -198,9 +188,34 @@ function onWindowResize() {
     render();
 }
 
+var state = {
+    scale: {x: 0, y: 0, z: 0},
+    position: {x: 0, y: 0, z: 0},
+    rotation: {x: 0, y: 0, z: 0}
+};
+
 function render() {
     window.gridHelper && window.gridHelper.sprites.forEach(function (sprite) {
         sprite.updateScale();
     });
     renderer.render(scene, camera);
+
+    if (!window.collada)
+        return;
+
+    watch('rotation');
+    watch('scale');
+    watch('position');
+}
+
+function watch(propertyName, factor) {
+    var f = factor || 1;
+    var p = state[propertyName];
+    var dp = window.collada[propertyName];
+    var l = window.listeners[propertyName];
+    l && !eq(p, dp) && l(p.x = dp.x, p.y = dp.y, p.z = dp.z);
+
+}
+function eq(o1, o2) {
+    return o1.x === o2.x && o1.y === o2.y && o1.z === o2.z;
 }
