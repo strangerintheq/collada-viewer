@@ -16,7 +16,7 @@ createSky();
 grid(100);
 onWindowResize();
 
-window.load = function (path) {
+window.load = function (path, scale, rotation, position) {
     window.collada && scene.remove(window.collada);
     var loader = new THREE.ColladaLoader();
     loader.options.convertUpAxis = true;
@@ -25,7 +25,9 @@ window.load = function (path) {
         window.collada.updateMatrix();
         scene.add(window.collada);
         transformControls.attach(window.collada);
-        scale(1);
+        scale && window.scale(scale);
+        rotation && window.rotate(rotation[0], rotation[1], rotation[2]);
+        position && window.translate(position[0], position[1], position[2]);
     });
 };
 

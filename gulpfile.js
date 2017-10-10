@@ -1,7 +1,7 @@
 var TaskBuilder = require('gulp-task-builder');
 
 TaskBuilder.task('editor')
-    .webpack('editor.js', false)
+    .webpack('editor.js', true)
     .dest();
 
 TaskBuilder
