@@ -17,7 +17,7 @@ grid(100);
 onWindowResize();
 
 window.load = function (path, scale, rotation, position) {
-    window.collada && scene.remove(window.collada);
+    clear(true);
     var loader = new THREE.ColladaLoader();
     loader.options.convertUpAxis = true;
     loader.load(path, function (loaded) {
@@ -28,7 +28,15 @@ window.load = function (path, scale, rotation, position) {
         scale && window.scale(scale);
         rotation && window.rotate(rotation[0], rotation[1], rotation[2]);
         position && window.translate(position[0], position[1], position[2]);
+        setTimeout(render, 100);
     });
+};
+
+window.clear = function(notRender){
+    transformControls.detach(window.collada);
+    window.collada && scene.remove(window.collada);
+    window.collada = null;
+    !notRender && render();
 };
 
 window.scale = function (scale) {
@@ -36,7 +44,7 @@ window.scale = function (scale) {
     window.collada.scale.x =
         window.collada.scale.y =
             window.collada.scale.z = scale;
-    setTimeout(render, 100);
+
 };
 
 window.translate = function (x, y, z) {
