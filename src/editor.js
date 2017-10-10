@@ -194,6 +194,11 @@ var state = {
     rotation: {x: 0, y: 0, z: 0}
 };
 
+function clampTo_0_360(v) {
+    while (v > 360) v -= 360;
+    while (v < 0) v += 360;
+    return v;
+}
 function render() {
     window.gridHelper && window.gridHelper.sprites.forEach(function (sprite) {
         sprite.updateScale();
@@ -203,19 +208,28 @@ function render() {
     if (!window.collada)
         return;
 
-    watch('rotation');
+    watch('rotation', 180/Math.PI, clampTo_0_360);
     watch('scale');
     watch('position');
 }
 
-function watch(propertyName, factor) {
-    var f = factor || 1;
+function watch(propertyName, factor, transformFunction) {
+    factor = factor || 1;
     var p = state[propertyName];
     var dp = window.collada[propertyName];
     var l = window.listeners[propertyName];
-    l && !eq(p, dp) && l(p.x = dp.x, p.y = dp.y, p.z = dp.z);
+    var f = transformFunction || function f(a){return a}
+    if (!eq(p, dp, factor)) {
+        p.x = dp.x * factor;
+        p.y = dp.y * factor;
+        p.z = dp.z * factor;
+        l && l(f(p.x), f(p.y), f(p.z));
+    }
 
 }
-function eq(o1, o2) {
-    return o1.x === o2.x && o1.y === o2.y && o1.z === o2.z;
+function eq(o1, o2, factor) {
+    factor = factor || 1;
+    return o1.x === o2.x * factor
+        && o1.y === o2.y * factor
+        && o1.z === o2.z * factor
 }
