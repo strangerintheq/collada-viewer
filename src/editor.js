@@ -210,6 +210,7 @@ function clampTo_0_360(v) {
     while (v < 0) v += 360;
     return v;
 }
+
 function render() {
     window.gridHelper && window.gridHelper.sprites.forEach(function (sprite) {
         sprite.updateScale();
